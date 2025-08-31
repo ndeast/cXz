@@ -48,3 +48,30 @@
     border: solid $primary;
     height: 1fr;
 }
+
+/* Results table color coding */
+#results-table .score-excellent {
+    color: $success;
+    text-style: bold;
+}
+
+#results-table .score-good {
+    color: $warning;
+    text-style: bold;
+}
+
+#results-table .score-fair {
+    color: orange;
+    text-style: bold;
+}
+
+#results-table .score-poor {
+    color: $error;
+    text-style: bold;
+}
+
+/* Progress indicator styling */
+#search-progress {
+    align: center middle;
+    height: 3;
+}

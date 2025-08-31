@@ -57,27 +57,37 @@ cxz
 # Or run directly
 python -m cxz.main
 
-# Run example searches
+# Run example searches (programmatic)
 python examples/search_example.py
 ```
+
+### TUI Navigation
+- **Main Screen**: Shows batch collection statistics and navigation options
+- **Search Screen** (`S` key): Search for records, add to batch collection
+- **Batch Collection** (`C` key): Manage batch collection, edit conditions, publish to Discogs
+- **Navigation**: Use arrow keys to select, `Enter` to select, `Escape` to go back
 
 ## Architecture
 
 ### Core Components
 
 1. **TUI Layer** (`cxz/tui/`): Textual-based terminal user interface
-   - `app.py`: Main application with navigation
-   - `screens/search.py`: Search interface screen
+   - `app.py`: Main application with navigation and batch stats
+   - `screens/search.py`: Search interface with table results and batch integration
+   - `screens/batch_collection.py`: Batch collection management with edit/publish functionality
 
 2. **API Services** (`cxz/api/`): External service integrations
    - `search_service.py`: High-level search orchestration (LLM + Discogs + ranking)
    - `llm_service.py`: Google Gemini LLM integration via llm-gemini plugin
    - `discogs_service.py`: Discogs API client with rate limiting
 
-3. **Models** (`cxz/models/`): Pydantic data models
+3. **Data Layer** (`cxz/data/`): Database and persistence
+   - `database.py`: SQLite database service for batch record management
+
+4. **Models** (`cxz/models/`): Pydantic data models
    - `record.py`: RecordQuery, VariantDescriptors, RankedResult models
 
-4. **Utilities** (`cxz/utils/`): Core parsing and query building
+5. **Utilities** (`cxz/utils/`): Core parsing and query building
    - `record_parser.py`: Natural language → structured query parsing
    - `discogs_query.py`: Discogs API query construction
 
@@ -176,3 +186,25 @@ success = await discogs_service.add_to_collection(
 - Processes up to 20 results in single ranking call
 - Preserves Discogs IDs for collection management
 - Falls back to basic relevance scoring if LLM fails
+
+### Database Integration
+- **SQLite database** stored in `~/.cxz/cxz.db` for batch record management
+- Records include: Discogs ID, conditions, notes, relevance scores, publication status
+- Supports batch operations: add, edit, remove, publish to Discogs
+- Tracks which records have been published to avoid duplicates
+
+## TUI Workflow
+
+### Search and Add to Batch
+1. Launch TUI with `cxz`
+2. Press 'S' to search for records
+3. Enter natural language query (e.g., "Elliott Smith Figure 8 red vinyl")
+4. Select record from results table and press 'A' or Enter to add to batch
+5. Record is saved to local SQLite database
+
+### Manage Batch Collection
+1. Press 'C' to view batch collection
+2. Select records and press 'E' to edit condition, sleeve condition, or notes
+3. Press 'D' to remove records from batch
+4. Press 'P' to publish all pending records to Discogs collection
+5. Press 'R' to refresh the view
