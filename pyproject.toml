@@ -1,0 +1,95 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cxz"
+version = "0.1.0"
+description = "A Python TUI for cataloging vinyl records using Discogs API and LLM integration"
+authors = [{ name = "Nik", email = "nik@ndeast.com" }]
+# readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.13"
+keywords = ["vinyl", "records", "discogs", "tui", "catalog"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Multimedia :: Sound/Audio",
+]
+
+dependencies = [
+  "textual>=0.83.0",
+  "httpx>=0.27.0",
+  "pydantic>=2.9.0",
+  "python-dotenv>=1.0.0",
+  "llm>=0.27.1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "pytest-asyncio>=0.24.0",
+  "ruff>=0.7.0",
+  "mypy>=1.13.0",
+  "pre-commit>=4.0.0",
+]
+
+[project.scripts]
+cxz = "cxz.main:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/cxz"
+Repository = "https://github.com/yourusername/cxz.git"
+Issues = "https://github.com/yourusername/cxz/issues"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+select = [
+  "E",  # pycodestyle errors
+  "W",  # pycodestyle warnings
+  "F",  # pyflakes
+  "I",  # isort
+  "B",  # flake8-bugbear
+  "C4", # flake8-comprehensions
+  "UP", # pyupgrade
+]
+ignore = [
+  "E501", # line too long, handled by black
+  "B008", # do not perform function calls in argument defaults
+  "W293",
+]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q --strict-markers"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+]

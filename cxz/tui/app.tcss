@@ -1,0 +1,50 @@
+/* CSS styles for the cXz TUI application */
+
+#main-content {
+    padding: 2;
+    height: 100%;
+}
+
+#welcome {
+    padding: 1;
+    margin: 1;
+    text-align: center;
+    background: $surface;
+    border: solid $primary;
+}
+
+#menu-buttons {
+    height: 3;
+    padding: 1;
+    align: center middle;
+}
+
+#menu-buttons Button {
+    margin: 0 1;
+    min-width: 16;
+}
+
+/* Search screen styles */
+#search-container {
+    padding: 2;
+    height: 100%;
+}
+
+#search-title {
+    text-align: center;
+    padding: 1;
+    color: $primary;
+    text-style: bold;
+}
+
+#search-input {
+    margin: 1 0;
+}
+
+#search-results {
+    margin: 1 0;
+    padding: 1;
+    background: $surface;
+    border: solid $primary;
+    height: 1fr;
+}
