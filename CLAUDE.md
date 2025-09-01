@@ -195,12 +195,44 @@ success = await discogs_service.add_to_collection(
 
 ## TUI Workflow
 
-### Search and Add to Batch
+### Enhanced Search Experience (2024 Updates)
+
+#### Visual Feedback & Progress
+- **Animated Progress Indicator**: Shows spinning progress wheel during search
+- **Real-time Console Logging**: Displays search phases for debugging
+- **Color-Coded Match Quality**: Results colored by confidence score
+  - 🟢 **Green (80%+)**: Excellent matches  
+  - 🟡 **Yellow (60-79%)**: Good matches
+  - 🟠 **Orange (40-59%)**: Fair matches
+  - 🔴 **Red (<40%)**: Poor matches, refine search
+
+#### Smart Enter Key Behavior
+- **Search Mode**: Enter in input field = perform search
+- **Results Mode**: Enter on selected row = add to collection
+- **Condition Modal**: Prompts for record/sleeve condition and notes
+
+#### Enhanced Format Display
+- **Multi-disc Support**: Shows quantity (e.g., "2×Vinyl")
+- **Comprehensive Details**: All format descriptors (LP, Album, 45 RPM, Reissue)
+- **Variant Information**: Color variants, limited editions, anniversary details
+- **Priority Parsing**: Physical format + variant info + edition details
+
+### Key Bindings
+- **A**: Add selected record to batch (with condition prompt)
+- **R**: Start new search (Search Again)
+- **C**: Clear results and return to search mode
+- **Enter**: Context-sensitive (search or select)
+- **Escape**: Back to main screen
+
+### Search and Add to Batch (Updated)
 1. Launch TUI with `cxz`
 2. Press 'S' to search for records
 3. Enter natural language query (e.g., "Elliott Smith Figure 8 red vinyl")
-4. Select record from results table and press 'A' or Enter to add to batch
-5. Record is saved to local SQLite database
+4. **Progress indicator shows** search phases
+5. **Results display** with color-coded match quality
+6. Select record and press 'A' or Enter
+7. **Condition modal opens** - select record condition, sleeve condition, add notes
+8. **Record saved** to local SQLite database with user preferences
 
 ### Manage Batch Collection
 1. Press 'C' to view batch collection
@@ -208,3 +240,114 @@ success = await discogs_service.add_to_collection(
 3. Press 'D' to remove records from batch
 4. Press 'P' to publish all pending records to Discogs collection
 5. Press 'R' to refresh the view
+
+## Recent TUI Improvements (2024)
+
+### Critical Bug Fixes
+- **Markup Crash Fix**: Safe error message handling prevents crashes on special characters
+- **Row Selection Fix**: Fixed "No Record Selected" bug when selecting first row (index 0)
+- **Thread Safety**: Improved async worker handling for better UI responsiveness
+
+### User Experience Enhancements
+- **Multi-disc Format Parsing**: Extracts variant info from all format entries including "All Media"
+- **State Management**: Clear UI states (search/results/searching) with appropriate actions
+- **Condition Selection**: Full workflow for adding records with proper grading
+- **Enhanced Status Messages**: Match quality feedback and actionable guidance
+
+### Technical Improvements
+- **Progress Animation**: LoadingIndicator with proper threading for smooth animation
+- **Error Resilience**: Safe text rendering with Rich.Text for markup-sensitive content
+- **Type Safety**: Full mypy compliance with proper type annotations
+- **Code Quality**: Ruff linting compliance with clean, maintainable code
+
+### File Structure Updates
+1. **TUI Layer** (`cxz/tui/`): 
+   - `screens/search.py`: Enhanced search interface with state management
+   - `screens/condition_modal.py`: **NEW** - Modal for condition/notes selection
+   - `screens/batch_collection.py`: Batch collection management
+   - `app.tcss`: **UPDATED** - CSS styles for color-coded results
+
+### Development Workflow Updates
+```bash
+# Use uv for all development commands
+uv sync --extra dev  # Install dev dependencies
+uv run pytest        # Run tests
+uv run ruff check .  # Run linting  
+uv run mypy .        # Run type checking
+uv run cxz           # Run application
+```
+
+## Latest Critical Fixes (September 2025)
+
+### Discogs Collection Publishing Fix
+**Issue**: Publishing records to Discogs collection was not properly setting conditions or notes.
+
+**Root Cause**: Discogs API requires a two-step process:
+1. Add item to collection (returns `instance_id`)
+2. Use Edit Fields Instance API with `instance_id` to set conditions
+
+**Solution Implemented**:
+- **Field IDs**: Media Condition = 1, Sleeve Condition = 2, Notes = 3 (likely)
+- **API Endpoints**: 
+  - Add: `POST /users/{username}/collection/folders/1/releases/{release_id}`
+  - Set conditions: `POST /users/{username}/collection/folders/1/releases/{release_id}/instances/{instance_id}/fields/{field_id}`
+- **Payload**: `{"value": "Near Mint (NM or M-)"}`
+
+**Files Modified**:
+- `cxz/api/discogs_service.py`: Complete rewrite of `add_to_collection()` method
+- `cxz/tui/screens/batch_collection.py`: Added notes parameter to publishing workflow
+
+### Enhanced Format Parsing for Variant Colors
+**Issue**: Yellow vinyl variant not showing in format column despite being in `formats[0].text` field.
+
+**Solution**: Enhanced format parsing to extract `text` field from all format entries, particularly for vinyl variants.
+```python
+# Now extracts color info from format.text field
+if text:
+    vinyl_info.append(text)  # "Yellow", "Red", "Clear", etc.
+```
+
+### Reset Search Functionality
+**Issue**: No way to modify search query after getting results.
+
+**Solution**: Added `R` key binding for "Reset Search" that:
+- Clears results but keeps the search query
+- Focuses input with cursor at end for easy modification
+- Provides helpful status message
+
+**Key Bindings Updated**:
+- `R` → Reset Search (was "Search Again" which cleared everything)
+- `C` → Clear Results (complete reset)
+
+### Improved Natural Language Parsing
+**Issue**: Queries like "dark thoughts highway to the end yellow vinyl" failed but "dark thoughts - highway to the end - yellow vinyl" worked.
+
+**Solution**: Enhanced LLM parsing prompt with:
+- **Parsing Strategy**: Explicit guidance for handling ambiguous descriptions
+- **Examples**: Specific examples of successful parsing patterns
+- **Artist Recognition**: Better handling of known artist names without delimiters
+- **Context Clues**: Instructions to use music knowledge for artist/album separation
+
+### Search Quality Improvements
+- **Format Display**: Now shows comprehensive multi-disc information with color variants
+- **Color Coding**: Results colored by confidence score (🟢 80%+ 🟡 60-79% 🟠 40-59% 🔴 <40%)
+- **Progress Feedback**: Animated progress indicators during search operations
+- **Error Handling**: Safe markup rendering prevents crashes on special characters
+
+### API Integration Enhancements
+- **Two-Phase Collection Adding**: Proper Discogs API workflow for setting conditions
+- **Rate Limiting**: Proper delays between API calls for condition setting
+- **Error Recovery**: Graceful handling of already-in-collection scenarios
+- **Instance Management**: Automatic retrieval of collection instance IDs
+
+### Development Notes
+- **Always use `uv`** for package management and running commands
+- **LLM Model**: Uses Gemini 2.5 Flash for parsing and ranking
+- **Database**: SQLite for local batch collection management
+- **Threading**: Proper async workers for non-blocking UI operations
+- **Type Safety**: Full mypy compliance with proper annotations
+
+### Known Issues & Workarounds
+1. **Notes Field ID**: Assuming field_id=3 for notes, may need adjustment based on user's custom fields
+2. **Rate Limiting**: Discogs API has 60 requests/minute limit - proper delays implemented
+3. **LLM Parsing**: Some edge cases may still require explicit delimiters for complex queries

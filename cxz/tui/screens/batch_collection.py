@@ -333,7 +333,8 @@ class BatchCollectionScreen(Screen):
                 success = await self.discogs_service.add_to_collection(
                     record["discogs_id"],
                     condition=record["condition"],
-                    sleeve_condition=record["sleeve_condition"]
+                    sleeve_condition=record["sleeve_condition"],
+                    notes=record.get("notes", "")
                 )
                 
                 if success:

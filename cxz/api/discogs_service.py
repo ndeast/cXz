@@ -241,14 +241,16 @@ class DiscogsService:
         self, 
         release_id: int, 
         condition: str = "Mint (M)", 
-        sleeve_condition: str = "Mint (M)"
+        sleeve_condition: str = "Mint (M)",
+        notes: str = ""
     ) -> bool:
-        """Add a release to the user's Discogs collection.
+        """Add a release to the user's Discogs collection with proper condition setting.
 
         Args:
             release_id: Discogs release ID
-            condition: Media condition (Mint (M), Near Mint (NM), etc.)
+            condition: Media condition (Mint (M), Near Mint (NM or M-), etc.)
             sleeve_condition: Sleeve condition
+            notes: Optional notes for the record
 
         Returns:
             True if successfully added, False otherwise
@@ -270,24 +272,37 @@ class DiscogsService:
 
         try:
             async with httpx.AsyncClient() as client:
+                # Step 1: Add to collection (without conditions - they don't work in this call)
                 response = await client.post(
                     collection_url,
-                    json={
-                        "condition": condition,
-                        "sleeve_condition": sleeve_condition
-                    },
                     headers=self.headers,
                     timeout=30.0,
                 )
                 
+                instance_id = None
                 if response.status_code == 201:
-                    print(f"✅ Successfully added release {release_id} to collection")
-                    return True
+                    # New item added - get instance_id from response
+                    response_data = response.json()
+                    instance_id = response_data.get("instance_id")
+                    print(f"✅ Successfully added release {release_id} to collection (instance {instance_id})")
+                    
                 elif response.status_code == 422:
-                    print(f"ℹ️  Release {release_id} is already in collection")
-                    return True
+                    # Already in collection - need to get the instance_id
+                    print(f"ℹ️  Release {release_id} is already in collection, fetching instance_id...")
+                    instance_id = await self._get_collection_instance_id(username, release_id)
+                    
                 else:
                     print(f"❌ Failed to add to collection: {response.status_code} - {response.text}")
+                    return False
+
+                # Step 2: Set conditions using instance_id if we have one
+                if instance_id:
+                    success = await self._set_collection_instance_conditions(
+                        username, release_id, instance_id, condition, sleeve_condition, notes
+                    )
+                    return success
+                else:
+                    print("❌ Could not get instance_id to set conditions")
                     return False
 
         except Exception as e:
@@ -315,6 +330,99 @@ class DiscogsService:
         except Exception as e:
             print(f"Error getting user identity: {e}")
             return None
+
+    async def _get_collection_instance_id(self, username: str, release_id: int) -> Optional[int]:
+        """Get the instance_id for a release already in collection."""
+        await self.rate_limiter.wait_if_needed()
+        
+        collection_url = f"{self.base_url}/users/{username}/collection/folders/1/releases/{release_id}/instances"
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    collection_url,
+                    headers=self.headers,
+                    timeout=30.0,
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    instances = data.get("instances", [])
+                    if instances:
+                        return instances[0]["id"]  # Get first instance
+                    else:
+                        print(f"No instances found for release {release_id}")
+                        return None
+                else:
+                    print(f"Failed to get instances: {response.status_code} - {response.text}")
+                    return None
+                    
+        except Exception as e:
+            print(f"Error getting collection instance_id: {e}")
+            return None
+
+    async def _set_collection_instance_conditions(
+        self, 
+        username: str, 
+        release_id: int, 
+        instance_id: int, 
+        condition: str, 
+        sleeve_condition: str,
+        notes: str
+    ) -> bool:
+        """Set conditions and notes on a collection instance using the Edit Fields Instance API."""
+        await self.rate_limiter.wait_if_needed()
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                # Set media condition (field_id = 1)
+                media_url = f"{self.base_url}/users/{username}/collection/folders/1/releases/{release_id}/instances/{instance_id}/fields/1"
+                response = await client.post(
+                    media_url,
+                    json={"value": condition},
+                    headers=self.headers,
+                    timeout=30.0,
+                )
+                
+                if response.status_code not in [200, 204]:
+                    print(f"Failed to set media condition: {response.status_code} - {response.text}")
+                    return False
+                
+                # Set sleeve condition (field_id = 2)
+                await self.rate_limiter.wait_if_needed()  # Rate limit between calls
+                sleeve_url = f"{self.base_url}/users/{username}/collection/folders/1/releases/{release_id}/instances/{instance_id}/fields/2"
+                response = await client.post(
+                    sleeve_url,
+                    json={"value": sleeve_condition},
+                    headers=self.headers,
+                    timeout=30.0,
+                )
+                
+                if response.status_code not in [200, 204]:
+                    print(f"Failed to set sleeve condition: {response.status_code} - {response.text}")
+                    return False
+                
+                # Set notes if provided (field_id = 3, assuming notes is field 3)
+                if notes:
+                    await self.rate_limiter.wait_if_needed()
+                    notes_url = f"{self.base_url}/users/{username}/collection/folders/1/releases/{release_id}/instances/{instance_id}/fields/3"
+                    response = await client.post(
+                        notes_url,
+                        json={"value": notes},
+                        headers=self.headers,
+                        timeout=30.0,
+                    )
+                    
+                    if response.status_code not in [200, 204]:
+                        print(f"Warning: Failed to set notes: {response.status_code} - {response.text}")
+                        # Don't fail the whole operation for notes
+                
+                print(f"✅ Successfully set conditions for release {release_id} (instance {instance_id})")
+                return True
+                
+        except Exception as e:
+            print(f"❌ Error setting collection instance conditions: {e}")
+            return False
 
 
 async def search_vinyl_records(

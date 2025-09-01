@@ -108,6 +108,18 @@ class LLMService:
         """
         return f"""You are a vinyl record expert. Parse the following natural language description of a vinyl record into structured data.
 
+PARSING STRATEGY:
+When parsing ambiguous descriptions without clear delimiters (like "dark thoughts highway to the end yellow vinyl"):
+1. Look for known artist names first (even partial matches like "Dark Thoughts")
+2. Identify album titles that commonly follow artist names
+3. Extract variant descriptors (colors, formats) from the end of the description
+4. Use context clues and music knowledge to separate artist from album
+
+EXAMPLES:
+- "dark thoughts highway to the end yellow vinyl" → Artist: "Dark Thoughts", Album: "Highway To The End", Color: "yellow"
+- "elliott smith figure 8 red vinyl" → Artist: "Elliott Smith", Album: "Figure 8", Color: "red"
+- "pink floyd dark side moon 45 rpm" → Artist: "Pink Floyd", Album: "The Dark Side of the Moon", Speed: "45 RPM"
+
 Extract information into two categories:
 
 1. CORE SEARCHABLE FIELDS (use these for Discogs API search):
@@ -124,10 +136,10 @@ Extract information into two categories:
 - Additional search keywords
 
 2. VARIANT DESCRIPTORS (use these for LLM matching after API results):
-- Vinyl color (clear, red, blue, splatter, marble, etc.)
+- Vinyl color (clear, red, blue, yellow, splatter, marble, etc.)
 - Limited edition (true/false)
 - Numbered edition (true/false)
-- Reissue type (anniversary, deluxe, expanded, etc.)
+- Reissue type (anniversary, deluxe, expanded, remaster, etc.)
 - Special features (gatefold, booklet, poster, colored sleeve, etc.)
 - Pressing plant/manufacturer
 - Matrix/runout information
@@ -166,12 +178,13 @@ Return your response as valid JSON matching this exact structure:
     "confidence": 0.0
 }}
 
-Rules:
+CRITICAL RULES:
 - Use null for missing information, not empty strings
 - For boolean fields (limited_edition, numbered), use true/false or null
 - For arrays (special_features, keywords), use [] if empty
-- Be conservative - only extract information you're confident about
-- If a field is unclear or ambiguous, use null
+- PRIORITIZE artist/album separation even without clear delimiters
+- Colors and formats are usually at the end of descriptions
+- Common artist names: "Dark Thoughts", "Elliott Smith", "Pink Floyd", etc.
 - Extract variant descriptors carefully as they're crucial for matching specific pressings
 - Return ONLY the JSON, no additional text
 
