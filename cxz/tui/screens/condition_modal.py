@@ -45,7 +45,7 @@ class ConditionModal(ModalScreen):
 
     def __init__(self, record_title: str, record_data: dict[str, Any]) -> None:
         """Initialize condition modal.
-        
+
         Args:
             record_title: Title of the record to display
             record_data: Full record data to pass back
@@ -60,51 +60,47 @@ class ConditionModal(ModalScreen):
         yield Vertical(
             Static("Add to Collection", id="condition-title"),
             Static(f"Record: {self.record_title}", classes="record-info"),
-            
             Horizontal(
                 Label("Condition:", classes="condition-label"),
                 Select(
                     [
-                        ("Mint (M)", "M"),
-                        ("Near Mint (NM)", "NM"),
-                        ("Very Good Plus (VG+)", "VG+"),
-                        ("Very Good (VG)", "VG"),
-                        ("Good Plus (G+)", "G+"),
-                        ("Good (G)", "G"),
-                        ("Fair (F)", "F"),
-                        ("Poor (P)", "P"),
+                        ("Mint (M)", "Mint (M)"),
+                        ("Near Mint (NM)", "Near Mint (NM)"),
+                        ("Very Good Plus (VG+)", "Very Good Plus (VG+)"),
+                        ("Very Good (VG)", "Very Good (VG)"),
+                        ("Good Plus (G+)", "Good Plus (G+)"),
+                        ("Good (G)", "Good (G)"),
+                        ("Fair (F)", "Fair (F)"),
+                        ("Poor (P)", "Poor (P)"),
                     ],
-                    value="NM",
+                    value="Very Good Plus (VG+)",
                     id="condition-select",
                 ),
                 classes="condition-row",
             ),
-            
             Horizontal(
                 Label("Sleeve Condition:", classes="condition-label"),
                 Select(
                     [
-                        ("Mint (M)", "M"),
-                        ("Near Mint (NM)", "NM"),
-                        ("Very Good Plus (VG+)", "VG+"),
-                        ("Very Good (VG)", "VG"),
-                        ("Good Plus (G+)", "G+"),
-                        ("Good (G)", "G"),
-                        ("Fair (F)", "F"),
-                        ("Poor (P)", "P"),
+                        ("Mint (M)", "Mint (M)"),
+                        ("Near Mint (NM)", "Near Mint (NM)"),
+                        ("Very Good Plus (VG+)", "Very Good Plus (VG+)"),
+                        ("Very Good (VG)", "Very Good (VG)"),
+                        ("Good Plus (G+)", "Good Plus (G+)"),
+                        ("Good (G)", "Good (G)"),
+                        ("Fair (F)", "Fair (F)"),
+                        ("Poor (P)", "Poor (P)"),
                     ],
-                    value="NM",
+                    value="Very Good Plus (VG+)",
                     id="sleeve-select",
                 ),
                 classes="condition-row",
             ),
-            
             Horizontal(
                 Label("Notes:", classes="condition-label"),
                 Input(placeholder="Optional notes...", id="notes-input"),
                 classes="condition-row",
             ),
-            
             Horizontal(
                 Button("Add to Collection", id="add-btn", variant="primary"),
                 Button("Cancel", id="cancel-btn"),
@@ -120,16 +116,16 @@ class ConditionModal(ModalScreen):
             condition_select = self.query_one("#condition-select", Select)
             sleeve_select = self.query_one("#sleeve-select", Select)
             notes_input = self.query_one("#notes-input", Input)
-            
+
             self.result = {
                 "record_data": self.record_data,
-                "condition": condition_select.value or "NM",
-                "sleeve_condition": sleeve_select.value or "NM",
+                "condition": condition_select.value,
+                "sleeve_condition": sleeve_select.value,
                 "notes": notes_input.value or "",
                 "action": "add",
             }
             self.dismiss(self.result)
-            
+
         elif event.button.id == "cancel-btn":
             self.result = {"action": "cancel"}
             self.dismiss(self.result)

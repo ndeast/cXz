@@ -87,7 +87,10 @@ class CxzApp(App):
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         """Handle worker completion."""
-        if event.worker.name == "_load_stats_worker" and event.state == WorkerState.SUCCESS:
+        if (
+            event.worker.name == "_load_stats_worker"
+            and event.state == WorkerState.SUCCESS
+        ):
             result = event.worker.result
             if "error" in result:
                 stats_text = f"⚠️  Error loading batch stats: {result['error']}"
@@ -95,10 +98,12 @@ class CxzApp(App):
                 total = result["total"]
                 pending = result["pending"]
                 added = result["added"]
-                
+
                 if total == 0:
-                    stats_text = "📭 No records in batch collection. Use Search to add some!"
+                    stats_text = (
+                        "📭 No records in batch collection. Use Search to add some!"
+                    )
                 else:
                     stats_text = f"📚 Batch Collection: {total} records ({pending} pending, {added} published to Discogs)"
-                
+
             self.query_one("#stats-display", Static).update(stats_text)

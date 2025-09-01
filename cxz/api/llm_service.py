@@ -209,12 +209,12 @@ JSON Response:"""
         # First add basic relevance scores and ensure IDs are preserved
         for result in results:
             # Ensure Discogs ID is preserved from search results
-            if 'id' not in result and 'resource_url' in result:
+            if "id" not in result and "resource_url" in result:
                 # Extract ID from resource_url (e.g., /releases/123456)
                 try:
-                    result['id'] = int(result['resource_url'].split('/')[-1])
+                    result["id"] = int(result["resource_url"].split("/")[-1])
                 except (ValueError, IndexError):
-                    result['id'] = None
+                    result["id"] = None
 
         # Use batch LLM ranking if we have variant descriptors
         if self._has_variant_descriptors(query.variant_descriptors):
@@ -222,10 +222,17 @@ JSON Response:"""
                 return self._batch_rank_variants(query, results, original_description)
             except Exception as e:
                 # Fall back to basic scoring if LLM fails
-                return self._fallback_basic_ranking(query, results, original_description, f"Batch LLM ranking failed: {e}")
+                return self._fallback_basic_ranking(
+                    query,
+                    results,
+                    original_description,
+                    f"Batch LLM ranking failed: {e}",
+                )
         else:
             # No variant descriptors - use basic scoring only
-            return self._fallback_basic_ranking(query, results, original_description, "No variant descriptors specified")
+            return self._fallback_basic_ranking(
+                query, results, original_description, "No variant descriptors specified"
+            )
 
     def _calculate_relevance_score(self, query: RecordQuery, result: dict) -> float:
         """Calculate a simple relevance score for a search result.
@@ -516,8 +523,10 @@ JSON Response:"""
         """
         # Limit to top 20 results to avoid token limits
         limited_results = results[:20]
-        
-        prompt = self._build_batch_ranking_prompt(query, limited_results, original_description)
+
+        prompt = self._build_batch_ranking_prompt(
+            query, limited_results, original_description
+        )
 
         try:
             model = self._get_model()
@@ -547,9 +556,9 @@ JSON Response:"""
 
             # Build final results
             for result in limited_results:
-                discogs_id = result.get('id')
+                discogs_id = result.get("id")
                 basic_score = self._calculate_basic_relevance_score(query, result)
-                
+
                 if discogs_id and discogs_id in ranking_map:
                     ranking = ranking_map[discogs_id]
                     variant_score = float(ranking.get("relevance_score", 0.0))
@@ -566,13 +575,15 @@ JSON Response:"""
                     query, result, basic_score, variant_score, variant_explanation
                 )
 
-                ranked_results.append({
-                    "release": result,
-                    "relevance_score": final_score,
-                    "match_explanation": explanation,
-                    "original_query": original_description,
-                    "structured_query": query,
-                })
+                ranked_results.append(
+                    {
+                        "release": result,
+                        "relevance_score": final_score,
+                        "match_explanation": explanation,
+                        "original_query": original_description,
+                        "structured_query": query,
+                    }
+                )
 
             # Sort by relevance score (highest first)
             ranked_results.sort(key=lambda x: x["relevance_score"], reverse=True)
@@ -581,7 +592,10 @@ JSON Response:"""
         except Exception as e:
             # Fall back to basic ranking if batch ranking fails
             return self._fallback_basic_ranking(
-                query, limited_results, original_description, f"Batch ranking error: {e}"
+                query,
+                limited_results,
+                original_description,
+                f"Batch ranking error: {e}",
             )
 
     def _build_batch_ranking_prompt(
@@ -609,8 +623,8 @@ JSON Response:"""
         # Build results list for evaluation
         results_text = []
         for i, result in enumerate(results, 1):
-            discogs_id = result.get('id', 'unknown')
-            
+            discogs_id = result.get("id", "unknown")
+
             # Extract detailed format information
             format_details = []
             formats = result.get("formats", [])
@@ -625,8 +639,12 @@ JSON Response:"""
                     format_info += f" - Details: {fmt['text']}"
                 format_details.append(format_info)
 
-            format_text = "\n    ".join(format_details) if format_details else "No format information"
-            
+            format_text = (
+                "\n    ".join(format_details)
+                if format_details
+                else "No format information"
+            )
+
             result_text = f"""
 {i}. DISCOGS_ID: {discogs_id}
    Title: {result.get('title', 'Unknown Title')}
@@ -634,7 +652,7 @@ JSON Response:"""
    Catalog Number: {result.get('catno', 'Unknown')}
    Format Details:
     {format_text}"""
-            
+
             results_text.append(result_text)
 
         all_results_text = "\n".join(results_text)
@@ -699,17 +717,19 @@ JSON Response:"""
         for result in results:
             basic_score = self._calculate_basic_relevance_score(query, result)
             explanation = self._generate_match_explanation(query, result, basic_score)
-            
+
             # Add fallback reason to explanation
             full_explanation = f"{explanation} | {reason}"
 
-            ranked_results.append({
-                "release": result,
-                "relevance_score": basic_score,
-                "match_explanation": full_explanation,
-                "original_query": original_description,
-                "structured_query": query,
-            })
+            ranked_results.append(
+                {
+                    "release": result,
+                    "relevance_score": basic_score,
+                    "match_explanation": full_explanation,
+                    "original_query": original_description,
+                    "structured_query": query,
+                }
+            )
 
         # Sort by relevance score (highest first)
         ranked_results.sort(key=lambda x: x["relevance_score"], reverse=True)
